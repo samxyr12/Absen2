@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Absensi QR Code</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #2c3e50;
+            --background-color: #f5f6fa;
+            --card-background: white;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--secondary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-color);
+            margin: 0.5rem auto;
+            border-radius: 2px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid #e1e1e1;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .card-header h2 {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .card-body {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        .card-body p {
+            margin-bottom: 0.5rem;
+        }
+
+        .qr-code {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #357abd;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+        }
+
+        .btn-delete:hover {
+            background-color: #c0392b;
+        }
+
+        #noDataMessage {
+            text-align: center;
+            color: var(--secondary-color);
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .data-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Data Absensi QR Code</h1>
+        <input type="text" id="searchInput" placeholder="Cari berdasarkan nama, KTP, atau email...">
+        <div id="dataGrid" class="data-grid"></div>
+        <div id="noDataMessage" style="display: none;">Tidak ada data yang tersimpan.</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dataGrid = document.getElementById('dataGrid');
+    const searchInput = document.getElementById('searchInput');
+    const noDataMessage = document.getElementById('noDataMessage');
+
+    // Enhanced QR Code Download Function
+function downloadEnhancedQRCode(data, options = {}) {
+    // Konfigurasi default dengan desain yang lebih modern
+    const config = {
+        width: 800,
+        height: 800,
+        qrCodeSize: 500,
+        backgroundColor: ['#ffffff', '#f4f7fa'],
+        accentColors: ['#3b82f6', '#6366f1', '#8b5cf6'],
+        shadowIntensity: 0.15,
+        cornerRadius: 30
+    };
+
+    // Override konfigurasi default
+    Object.assign(config, options);
+
+    // Buat canvas resolusi tinggi
+    const canvas = document.createElement('canvas');
+    canvas.width = config.width;
+    canvas.height = config.height;
+    const ctx = canvas.getContext('2d');
+
+    // Gradient background soft
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, config.backgroundColor[0]);
+    gradient.addColorStop(1, config.backgroundColor[1]);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    return new Promise((resolve, reject) => {
+        try {
+            // Buat QR Code
+            const qrCodeElement = document.createElement('div');
+            const qrCode = new QRCode(qrCodeElement, {
+                text: JSON.stringify(data),
+                width: config.qrCodeSize,
+                height: config.qrCodeSize,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            setTimeout(() => {
+                const qrCodeCanvas = qrCodeElement.querySelector('canvas');
+                
+                // Efek bayangan modern dan lembut
+                ctx.shadowColor = `rgba(0,0,0,${config.shadowIntensity})`;
+                ctx.shadowBlur = 40;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 15;
+
+                // Background dengan sudut membulat
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                const x = (canvas.width - (config.qrCodeSize + 60)) / 2;
+                const y = (canvas.height - (config.qrCodeSize + 60)) / 2;
+                const radius = config.cornerRadius;
+
+                // Fungsi untuk membuat path rounded rectangle
+                function roundedRect(x, y, width, height, radius) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + radius, y);
+                    ctx.arcTo(x + width, y, x + width, y + height, radius);
+                    ctx.arcTo(x + width, y + height, x, y + height, radius);
+                    ctx.arcTo(x, y + height, x, y, radius);
+                    ctx.arcTo(x + width, y, x + width, y, radius);
+                    ctx.closePath();
+                }
+
+                // Gambar background rounded rectangle
+                roundedRect(x, y, config.qrCodeSize + 60, config.qrCodeSize + 60, radius);
+                ctx.fill();
+
+                // Reset bayangan
+                ctx.shadowColor = 'transparent';
+
+                // Tambahkan elemen dekoratif dengan warna aksen
+                const accentColor = config.accentColors[Math.floor(Math.random() * config.accentColors.length)];
+                
+                // Garis lengkung dekoratif
+                ctx.beginPath();
+                ctx.moveTo(-50, canvas.height - 100);
+                ctx.quadraticCurveTo(canvas.width / 2, canvas.height + 50, canvas.width + 50, canvas.height - 100);
+                ctx.strokeStyle = `${accentColor}33`; // Warna transparan
+                ctx.lineWidth = 10;
+                ctx.stroke();
+
+                // Gambar QR Code dengan sedikit padding
+                ctx.drawImage(
+                    qrCodeCanvas, 
+                    (canvas.width - config.qrCodeSize) / 2, 
+                    (canvas.height - config.qrCodeSize) / 2, 
+                    config.qrCodeSize, 
+                    config.qrCodeSize
+                );
+
+                // Tambahkan detail kecil di sudut
+                ctx.beginPath();
+                ctx.arc(canvas.width - 70, 70, 15, 0, Math.PI * 2);
+                ctx.fillStyle = `${accentColor}99`;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(70, canvas.height - 70, 10, 0, Math.PI * 2);
+                ctx.fillStyle = `${accentColor}99`;
+                ctx.fill();
+
+                // Konversi ke image data
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Buat nama file
+                const fileName = `QRCode_${data.name || 'data'}_${new Date().getTime()}.png`;
+
+                // Download
+                const a = document.createElement('a');
+                a.href = imgData;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Bersihkan elemen QR Code
+                qrCodeElement.remove();
+
+                resolve(imgData);
+            }, 100);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+
+
+    // JSON Validation Function
+    function isJSON(str) {
+        try {
+            JSON.parse(str);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Render Data Function
+    function renderData() {
+        dataGrid.innerHTML = ''; // Clear existing data
+        let dataFound = false;
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const rawData = localStorage.getItem(key);
+
+            // Check if data is valid JSON
+            if (!isJSON(rawData)) {
+                console.warn(`Data with key "${key}" is not valid JSON and will be skipped.`);
+                continue;
+            }
+
+            const data = JSON.parse(rawData);
+
+            // Check if the data has a uniqueID (to ensure it's a QR code entry)
+            if (data && data.uniqueID) {
+                const searchTerm = searchInput.value.toLowerCase();
+                if (
+                    searchTerm &&
+                    !data.name.toLowerCase().includes(searchTerm) &&
+                    !data.ktp.includes(searchTerm) &&
+                    !data.email.toLowerCase().includes(searchTerm)
+                ) {
+                    continue;
+                }
+
+                dataFound = true;
+                const card = createDataCard(data);
+                dataGrid.appendChild(card);
+            }
+        }
+
+        // Show/hide no data message
+        noDataMessage.style.display = dataFound ? 'none' : 'block';
+    }
+
+    // Create Data Card Function
+    function createDataCard(data) {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'card-header';
+        const nameTitle = document.createElement('h2');
+        nameTitle.textContent = data.name;
+        cardHeader.appendChild(nameTitle);
+
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body';
+        cardBody.innerHTML = `
+            <p><strong>Tanggal Lahir:</strong> ${data.birthdate}</p>
+            <p><strong>Jenis Kelamin:</strong> ${data.gender}</p>
+            <p><strong>Agama:</strong> ${data.religion}</p>
+            <p><strong>Alamat:</strong> ${data.address}</p>
+            <p><strong>No. KTP:</strong> ${data.ktp}</p>
+            <p><strong>No. Telepon:</strong> ${data.phone}</p>
+            <p><strong>Email:</strong> ${data.email}</p>
+        `;
+
+        const qrCodeSection = document.createElement('div');
+        qrCodeSection.className = 'qr-code';
+        const qrCodeElement = document.createElement('div');
+        qrCodeSection.appendChild(qrCodeElement);
+
+        new QRCode(qrCodeElement, {
+            text: JSON.stringify(data),
+            width: 150,
+            height: 150
+        });
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const downloadBtn = document.createElement('a');
+        downloadBtn.href = '#';
+        downloadBtn.className = 'btn';
+        downloadBtn.textContent = 'Download QR';
+        downloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            downloadEnhancedQRCode(data);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-delete';
+        deleteBtn.textContent = 'Hapus';
+        deleteBtn.addEventListener('click', function() {
+            if (confirm(`Apakah Anda yakin ingin menghapus data ${data.name}?`)) {
+                localStorage.removeItem(data.ktp);
+                renderData(); // Refresh the view
+            }
+        });
+
+        actions.appendChild(downloadBtn);
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(cardHeader);
+        card.appendChild(cardBody);
+        card.appendChild(qrCodeSection);
+        card.appendChild(actions);
+
+        return card;
+    }
+
+    // Initial Data Rendering
+    renderData();
+
+    // Search Input Event Listener
+    searchInput.addEventListener('input', renderData);
+});
+    </script>
+</body>
+</html>
